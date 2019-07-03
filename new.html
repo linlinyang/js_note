@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+</head>
+<body>
+    
+    <script>
+
+        function Person(name,age){
+            Object.assign(this,{
+                name,
+                age
+            });
+        }
+        Person.prototype.instruct = function(){
+            console.log(`My name is ${this.name}, I am ${this.age} years old`);
+        }
+
+        function _new(){
+            let target = {};
+            let [constructor,...args] = [...arguments];
+            target.__proto__ = constructor.prototype;
+            let ret = constructor.apply(target,args);
+            return ret instanceof Object ? ret : target;
+        }
+
+        var instance = _new(Person,'zoro',18);
+        console.log(instance);
+        instance.instruct();
+
+    </script>
+
+</body>
+</html>

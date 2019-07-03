@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+</head>
+<body>
+    
+    <script>
+    
+        /* function a(){
+            var num = 3,
+                ret = b(num);
+            console.log(ret);
+            c(ret);
+        }
+
+        function b(n){
+            return n * n;
+        }
+
+        function c(r){
+            console.log(r);
+        }
+
+        a(); */
+        
+        function fibonacci(n){
+            if(n <= 1){
+                return 1;
+            }
+            return fibonacci(n - 1) + fibonacci(n - 2);
+        }
+
+        console.log(fibonacci(10));
+
+        /* function fibonacciTail(n,prev = 1,next = 1){
+            if(n <= 1){
+                return next;
+            }
+            console.log(next);
+            return fibonacciTail(n - 1,next,prev + next);
+        }
+
+        console.log(fibonacciTail(100)); */
+    </script>
+
+</body>
+</html>

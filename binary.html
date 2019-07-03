@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+</head>
+<body>
+    
+    <script>
+        
+        function createRandArr(length,min,max){
+            var ret = [];
+            while(length--){
+                ret.push(Math.floor(Math.random() * (max - min) + min));
+            }
+            return ret;
+        }
+
+        var arr = createRandArr(100,0,100);
+        arr.sort();
+        
+        function binarySearch(arr,target){
+            var left = 0,
+                right = arr.length - 1;
+            while(left <= right){
+                var mid = left + ((right - left) >> 2);
+                if(arr[mid] === target){
+                    return mid;
+                }else if(arr[mid] < target){
+                    left = mid + 1;
+                }else{
+                    right = mid - 1;
+                }
+            }
+            return -1;
+        }
+        console.log(binarySearch(arr,27));
+    </script>
+
+</body>
+</html>

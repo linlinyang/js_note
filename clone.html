@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+</head>
+<body>
+    
+    <script>
+
+        var json = {
+            bar: 'deep clone',
+            date: new Date(),
+            reg: new RegExp('^\d$','ig'),
+            func: function(){
+                consoel.log('func');
+            },
+            arr: [1,2,3],
+            arrObj: [{
+                name: 'aa',
+                tel: 12345678911
+            },{
+                name: 'bb',
+                tel: 98765432111
+            }],
+            foo: undefined,
+            obj: {
+                a: 'a',
+                b: 123,
+                json: json
+            }
+        };
+
+        /*
+        * 纯对象深拷贝
+        * @params{obj}, Object;拷贝对象
+        * @params{obj}, Boolean;true: 拷贝所有,false: 相同项不拷贝
+        * example
+            var a = {a: 'a'},
+                obj = {a: a,b: 'b',c: a};
+            cloneObj = objectDeepClone(obj,true);
+            cloneObj.a.a = 'changed';
+            console.log(cloneObj.c.a);//a
+
+            cloneObj = objectDeepClone(obj,false);
+            cloneObj.a.a = 'changed';
+            console.log(cloneObj.c.a);//changed
+        */
+        function objectDeepClone(obj,isForce){
+            if(!obj || Object.prototype.toString.call(obj) !== '[object Object]'){
+                return obj;
+            }
+
+            var uniqueList = [];
+            isForce = !!isForce;
+
+            var result = {},
+                loopList = [{
+                    parent: result,
+                    key: undefined,
+                    data: obj
+                }];
+
+            while(loopList.length){
+
+                var node = loopList.pop(),
+                    parent = node.parent,
+                    key = node.key,
+                    data = node.data,
+                    tempRes = parent;
+
+                if(key !== undefined){
+                    tempRes = parent[key] = {};
+                }
+
+                if(!isForce){
+                    var uniqueData = uniqueFind(uniqueList,data);
+                    if(uniqueData){
+                        parent[key] = uniqueData.target;
+                        continue;
+                    }
+                }
+
+                uniqueList.push({
+                    source: data,
+                    target: tempRes
+                });
+
+                for(var k in data){
+                    if(data.hasOwnProperty(k)){
+                        var val = data[k];
+
+                        if(Object.prototype.toString.call(val) === '[object Object]'){
+                            loopList.push({
+                                parent: tempRes,
+                                key: k,
+                                data: val
+                            });
+                        }else{
+                            tempRes[k] = val;
+                        }
+                    }
+                }
+
+            }
+
+            uniqueList = null;
+            return result;
+
+        }
+
+        /*
+        * 数组中循环查找存在对象
+        * @params{arr} Array;目标对象
+        * @params{item} any type;查找对象
+        * @return 查找结果，没有返回null
+        */
+        function uniqueFind(arr,item){
+            var len = arr.length;
+
+            while(len--){
+                if(arr[len].source === item){
+                    return arr[len];
+                }
+            }
+
+            return null;
+        }
+
+
+    </script>
+
+</body>
+</html>

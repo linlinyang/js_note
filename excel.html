@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+</head>
+<body>
+
+    <script>
+
+        var json = [{
+            name: 'aaa',
+            age: 12,
+            school: 'arge',
+            job: 'dwaf',
+            phone: 15434352352,
+            email: 'rfv@dewf'
+        },{
+            name: '张三',
+            age: 43,
+            school: '铁岭大学',
+            job: '包工头',
+            phone: 15434352352,
+            email: 'trg@dewwefef'
+        },{
+            name: 'wder',
+            age: 54,
+            school: 'efwwe',
+            job: 'wedw',
+            phone: 15434352352,
+            email: 'fe@g54qf'
+        },{
+            name: 'ewf',
+            age: 23,
+            school: 'dwa',
+            job: 'er',
+            phone: 15434352352,
+            email: 'fqr@fwaf'
+        }];
+
+        var str = '姓名,年龄,学校,工作,电话,邮箱\n';
+        /* json.forEach(item => {
+            Object.keys(item).forEach(key => {
+                str += `${item[key]}\t,`;
+            });
+            str += '\n';
+        }); */
+        var len = json.length;
+        while(len--){
+            for(var key in json[len]){
+                str += json[len][key] + '\t,';
+            }
+            str += '\n';
+        }
+        /* var uri = `data:text/csv;charset=utf-8,${encodeURIComponent(str)}`; */
+        var uri = 'data:text/csv;charset=utf-8,'+encodeURIComponent(str);
+        var link = document.createElement('a');
+        link.href = uri;
+        link.download = 'json数据表.csv';
+        document.body.appendChild(link);
+        link.click();
+        link.parentNode && link.parentNode.removeChild(link);
+    </script>
+    
+</body>
+</html>

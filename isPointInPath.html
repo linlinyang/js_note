@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <style>
+    
+        .demo{
+            margin: 0 auto;
+            width: 100%;
+            position: relative;
+            overflow: hidden;
+            text-align: center;
+        }
+
+        .demo canvas{
+            margin: 50px 0;
+            box-shadow: 0 0 40px rgba(0,0,0,0.45);
+        }
+    
+    </style>
+</head>
+<body>
+    
+    <div class="demo">
+        <canvas width="800" height="600"></canvas>
+    </div>
+
+    <script>
+    
+        var canvas = document.querySelector('canvas'),
+            ctx = canvas.getContext('2d');
+        
+            ctx.beginPath();
+            ctx.save();
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 2;
+            ctx.arc(100,100,50,0,Math.PI * 2);
+            ctx.stroke();
+            ctx.restore();
+
+            ctx.beginPath();
+            ctx.save();
+            ctx.strokeStyle = 'red';
+            ctx.lineWidth = 3;
+            ctx.rect(200,200,100,100);
+            ctx.stroke();
+            ctx.restore();
+
+            ctx.beginPath();
+            ctx.save();
+            ctx.strokeStyle = 'blue';
+            ctx.lineWidth = 4;
+            ctx.moveTo(100,100);
+            ctx.lineTo(250,250);
+            ctx.lineTo(100,250);
+            ctx.lineTo(100,100);
+            ctx.stroke();
+
+            canvas.addEventListener('click',function(e){
+                var oldPos = canvas.getBoundingClientRect();
+                var x = e.clientX - oldPos.x;
+                var y = e.clientY - oldPos.y;
+
+                console.log(ctx.isPointInPath(x,y));
+            },false);
+    
+    </script>
+
+</body>
+</html>

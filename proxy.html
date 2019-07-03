@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+</head>
+<body>
+    
+    <script>
+    
+        /* let person = {
+            name: '张三'
+        };
+
+        let proxy = new Proxy(person,{
+            get(target,property,_){
+                return target[property] || undefined;
+            }
+        });
+        console.log(proxy);
+        console.log(proxy.name);
+        console.log(proxy.age);
+        let obj = Object.create(proxy);
+        console.log(obj);
+        console.log(obj.name); */
+
+        /* let arr = [1,2,3,4,5,6];
+        let proxy = new Proxy(arr,{
+            get(target,property,_){
+                let index = property > 0 ? property : target.length + (+property);
+                return target[index];
+            }
+        });
+        console.log(proxy[-1]);
+        console.log(proxy[1]) */
+
+        /* let obj = {
+            name: 'aa'
+        };
+        let proxy = new Proxy(obj,{
+            get(target,property,px){
+                return px[property];
+            }
+        });
+
+        console.log(proxy.name); */
+
+        /* const target = Object.defineProperty({},'name',{
+            value: '123'
+        });
+        console.log(target);
+        const proxy = new Proxy(target,{
+            get(tar,property,_){
+                return 'ac';
+            }
+        });
+        console.log(proxy.name); */
+
+        /* let person = {
+            age: 20
+        };
+
+        let proxy = new Proxy(person,{
+            get(target,property){
+                return target[proxy];
+            },
+            set(target,key,value){
+                if(key === 'age'){
+                    if(!Number.isInteger(value)){
+                        throw new TypeError('The age is not an integer');
+                    }else if(value > 200){
+                        throw new RangeError('The age too max');
+                    }
+                }
+                target[key] = value;
+            }
+        });
+
+        proxy.age = 100;
+        proxy.name = 'yanglin';
+        console.log(person); */
+
+        /* function func(){
+            return 'I am in function';
+        }
+
+        var proxy = new Proxy(func,{
+            apply(target,ctx,args){
+                return 'I am the proxy';
+            }
+        });
+        
+        console.log(func()); */
+
+        /* var obj = {
+            prop: 'foo',
+            _prop: 'bar'
+        };
+
+        var proxy = new Proxy(obj,{
+            has(target,property){
+                console.log(property);
+                if(property[0] === '_'){
+                    return false;
+                }
+                return property in target;
+            }
+        });
+
+        console.log('toString' in proxy);
+
+        for(let a in proxy){
+            console.log(proxy[a]);
+        } */
+
+        /* var Pox = new Proxy(function(){},{
+            construct(target,args){
+                return {
+                    value: args.join(',')
+                };
+            }
+        });
+        console.log(new Pox('a','b')); */
+
+        /* var obj = {
+            a: 'aa',
+            _a: 'aaa',
+            b: 'bb'
+        };
+
+        var proxy = new Proxy(obj,{
+            deleteProperty(target,property){
+                if(property[0] === '_'){
+                    throw new Error('provite key can not delete');
+                    return false;
+                }
+                delete obj[property];
+                return true;
+            }
+        });
+
+        delete proxy.a;
+        console.log(obj); */
+
+        /* var obj = {
+            a: 'aaa',
+            _a: 'native',
+            b: 'bb'
+        };
+
+        var proxy = new Proxy(obj,{
+            defineProperty(target,key,desc){
+                console.log('proxy');
+                return false;
+            }
+        });
+
+        Object.defineProperty(obj,'a',{
+            get(key){
+                return '123';
+            }
+        });
+
+        console.log(proxy.a); */
+
+        /* var obj = {
+            a: 'a'
+        };
+
+        var proxy = new Proxy({},{
+            getPrototypeOf(target){
+                console.log(arguments);
+                return obj;
+            }
+        });
+
+        console.log(Object.getPrototypeOf(proxy)); */
+
+
+    </script>
+
+</body>
+</html>
