@@ -27,27 +27,23 @@
                 me.status = PENDING;
                 me.value = null;
                 me.error = null;
-                me.resolveCallback = null;
-                me.rejectCallback = null;
+                me.resolveCallback = [];//以数组存储多个then的回调函数
+                me.rejectCallback = [];//以数组存储多个then的回调函数
 
                 function resolve(val){
-                    setTimeout(() => {
-                        if(me.status === PENDING){//检查状态，不可逆操作
-                            me.status = FULFILLED;
-                            me.value = val;
-                            me.resolveCallback(val);
-                        }
-                    },0);
+                    if(me.status === PENDING){//检查状态，不可逆操作
+                        me.status = FULFILLED;
+                        me.value = val;
+                        me.resolveCallback.forEach(func => func(val));//状态改变为fulfilled并执行resolve
+                    }
                 }
 
                 function reject(val){
-                    setTimeout(() => {
-                        if(me.status === PENDING){//检查状态，不可逆操作
-                            me.status = REJECTING;
-                            me.error = val;
-                            me.rejectCallback(val);
-                        }
-                    });
+                    if(me.status === PENDING){//检查状态，不可逆操作
+                        me.status = REJECTING;
+                        me.error = val;
+                        me.rejectCallback.forEach(func => func(val));//状态改变为rejecting并执行reject
+                    }
                 }
 
                 try {
@@ -59,17 +55,32 @@
 
             then(onResolve,onReject){
                 const me = this;
+                onResolve = typeof onResolve === 'function'
+                    ? onResolve
+                    : v => v;
+                onReject = typeof onReject === 'function'
+                    ? onReject
+                    : e => {
+                        throw e;
+                    }
                 if(me.status === PENDING){
-                    me.resolveCallback = typeof onResolve === 'function'
-                        ? onResolve
-                        : v => v;
-                    me.rejectCallback = typeof onReject === 'function'
-                        ? onReject
-                        : e => {
-                            throw e;
-                        };
+                    me.resolveCallback.push(onResolve);
+                    me.rejectCallback.push(onReject);
+                }else if(me.status === FULFILLED){
+                    try {
+                        onResolve(me.value);
+                    } catch (error) {
+                        onReject(error);
+                    }
+                }else if(me.status === REJECTING){
+                    try {
+                        onReject(me.error);
+                    } catch (error) {
+                        onReject(error);
+                    }
                 }
             }
+
         }
 
         new JPromise((resolve,reject) => {
@@ -87,6 +98,39 @@
         //before resolve
         //after resolve
         //resolved (延迟1秒后运行)
+
+        var p = new JPromise((resolve,reject) => {
+            setTimeout(() => {
+                resolve('delay 2000s');
+                p.then(res => {
+                    console.log(`run after resolve,res is:  ${res}`);
+                });
+            },2000);
+        });
+
+        p.then(res => {
+            console.log(res);
+        });
+        p.then(res => {
+            console.log(`${res} run again`);
+        });
+
+        //运行结果:
+
+        //2秒后：
+        //delay 2000s
+        //delay 2000s run again
+        //run after resolve,res is:  delay 2000s
+
+        var p1 = new JPromise((resolve,reject) => {
+            setTimeout(() => {
+                reject('reject test');
+            },3000);
+        });
+
+        p1.then(null,res => {
+            console.log(res);
+        });
         
     </script>
 

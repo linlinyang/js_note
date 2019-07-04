@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+</head>
+<body>
+    
+    <script>
+        
+        /* 
+        * 进阶功能：增加链式操作,all和执行
+        */    
+        
+        /* 
+        * 定义状态常量
+        */
+        const PENDING = 1;
+        const FULFILLED = 2;
+        const REJECTING = 3;
+
+        class JPromise{
+            constructor(excutor){
+                const me = this;
+                me.status = PENDING;
+                me.value = null;
+                me.error = null;
+                me.resolveCallback = [];//以数组存储多个then的回调函数
+                me.rejectCallback = [];//以数组存储多个then的回调函数
+
+                function resolve(val){
+                    if(val instanceof JPromise){//resolve返回promise对象
+                        return val.then(resolve,reject);
+                    }
+                    if(me.status === PENDING){//检查状态，不可逆操作
+                        me.status = FULFILLED;
+                        me.value = val;
+                        me.resolveCallback.forEach(func => func(val));//状态改变为fulfilled并执行resolve
+                    }
+                }
+
+                function reject(val){
+                    if(me.status === PENDING){//检查状态，不可逆操作
+                        me.status = REJECTING;
+                        me.error = val;
+                        me.rejectCallback.forEach(func => func(val));//状态改变为rejecting并执行reject
+                    }
+                }
+
+                try {
+                    excutor(resolve,reject);
+                } catch (error) {
+                    reject(error);
+                }
+            }
+
+            then(onResolve,onReject){
+                const me = this;
+                onResolve = typeof onResolve === 'function'
+                    ? onResolve
+                    : v => v;
+                onReject = typeof onReject === 'function'
+                    ? onReject
+                    : e => {
+                        throw e;
+                    }
+                if(me.status === PENDING){
+                    return new JPromise((resolve,reject) => {//默认返回promise，可以执行链式then
+                        me.resolveCallback.push(() => {
+                            try {
+                                resolvePromise(onResolve(me.value),resolve,reject);
+                            } catch (error) {
+                                reject(error);
+                            }
+                        });
+                        me.rejectCallback.push(() => {
+                            try {
+                                onReject(me.error);
+                            } catch (error) {
+                                reject(error);
+                            }
+                        });
+                    });
+                }else if(me.status === FULFILLED){
+                    return new JPromise((resolve,reject) => {//默认返回promise，可以执行链式then
+                        setTimeout(() => {
+                            try {
+                                resolvePromise(onResolve(me.value),resolve,reject);
+                            } catch (error) {
+                                reject(error);
+                            }
+                        });
+                    });
+                }else if(me.status === REJECTING){
+                    return new JPromise((resolve,reject) => {//默认返回promise，可以执行链式then
+                        setTimeout(() => {
+                            try {
+                                onReject(me.error);
+                            } catch (error) {
+                                reject(error);
+                            }
+                        });
+                    });
+                }
+            }
+        }
+
+        function resolvePromise(retValue,resolve,reject){
+            if(retValue instanceof JPromise){
+                if(retValue.status === PENDING){
+                    retValue.then(ret => {
+                        resolvePromise(ret,resolve,reject);
+                    },error => {
+                        reject(error);
+                    });
+                }else{
+                    retValue.then(resolve,reject);
+                }
+            }else{
+                resolve(retValue);
+            }
+        }
+
+        var p = new JPromise((resolve,reject) => {
+            setTimeout(() => {
+                resolve('1000ms delay--p');
+            },1000);
+        }).then(res => {
+            console.log(res);
+            return new JPromise((resolve,reject) => {
+                setTimeout(() => {
+                    console.log('run after 2000ms--p');
+                    resolve('2000ms delay--p');
+                },1000);
+            });
+        }).then(res => {
+            console.log(res);
+        });
+
+        //运行结果：
+        //1000ms delay--p (1s 后执行)
+        //run after 2000ms--p (2s 后执行)
+        //2000ms delay--p (2s 后执行)
+
+        var p1 = new JPromise((resolve,reject) => {
+            setTimeout(() => {
+                console.log('1000ms delay--p1');
+                return resolve(new JPromise((rs,rj) => {
+                    setTimeout(() => {
+                        return rs('delay 2000ms--p1');
+                    },1000);
+                }));
+            },1000);
+        }).then(res => {
+            console.log(res);
+        });
+
+        //运行结果：
+        //1000ms delay--p1 (1s后执行)
+        //delay 2000ms--p1 (2s 后执行)
+        
+
+    </script>
+
+</body>
+</html>
