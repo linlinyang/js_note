@@ -11,7 +11,7 @@
     <script>
         
         /* 
-        * 进阶功能：增加链式操作,all和执行
+        * 进阶功能：增加全局方法all和race
         */    
         
         /* 
@@ -106,6 +106,39 @@
                 }
             }
 
+            /* 
+            * 捕获promise抛出错误或者reject状态改变返回值
+            */
+            catch(onReject){
+                const me = this;
+                onReject = typeof onReject === 'function'
+                    ? onReject
+                    : e => {
+                        throw e;
+                    }
+                if(me.status === PENDING){
+                    return new JPromise((resolve,reject) => {
+                        me.rejectCallback.push(() => {
+                            try {
+                                onReject(me.error);
+                            } catch (error) {
+                                reject(error);
+                            }
+                        });
+                    });
+                }else if(me.status === REJECTING){
+                    return new JPromise((resolve,reject) => {//返回新的实例
+                        setTimeout(() => {
+                            try {
+                                onReject(me.error);
+                            } catch (error) {
+                                reject(error);
+                            }
+                        });
+                    });
+                }
+            }
+
             static all(promises){
                 promises = Array.isArray(promises) ? promises : [promises];
                 return new JPromise((resolve,reject) => {
@@ -133,6 +166,7 @@
                     })
                 });
             }
+
         }
 
         function resolvePromise(retValue,resolve,reject){
@@ -151,7 +185,7 @@
             }
         }
 
-        /* var p1 = new JPromise((resolve,reject) => {
+        var p1 = new JPromise((resolve,reject) => {
             setTimeout(() => {
                 resolve(1);
             },2000);
@@ -182,9 +216,9 @@
             cosnole.log(res);
         },error => {
             console.log('rejected');
-        }); */
+        });
 
-        /* var p5 = new JPromise((resolve,reject) => {
+        var p5 = new JPromise((resolve,reject) => {
             setTimeout(() => {
                 resolve(1);
             },2000);
@@ -206,7 +240,7 @@
             console.log(res);
         },error => {
             console.log(error);
-        }); */
+        });
 
     </script>
 

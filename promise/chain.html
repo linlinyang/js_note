@@ -42,6 +42,9 @@
                 }
 
                 function reject(val){
+                    if(val instanceof JPromise){
+                        return val.then(resolve,reject);
+                    }
                     if(me.status === PENDING){//检查状态，不可逆操作
                         me.status = REJECTING;
                         me.error = val;
@@ -56,6 +59,9 @@
                 }
             }
 
+            /* 
+            * 链式操作不是返回this，而是返回一个新的promise实例
+            */
             then(onResolve,onReject){
                 const me = this;
                 onResolve = typeof onResolve === 'function'
@@ -67,7 +73,7 @@
                         throw e;
                     }
                 if(me.status === PENDING){
-                    return new JPromise((resolve,reject) => {//默认返回promise，可以执行链式then
+                    return new JPromise((resolve,reject) => {//返回新的实例
                         me.resolveCallback.push(() => {
                             try {
                                 resolvePromise(onResolve(me.value),resolve,reject);
@@ -84,7 +90,7 @@
                         });
                     });
                 }else if(me.status === FULFILLED){
-                    return new JPromise((resolve,reject) => {//默认返回promise，可以执行链式then
+                    return new JPromise((resolve,reject) => {//返回新的实例
                         setTimeout(() => {
                             try {
                                 resolvePromise(onResolve(me.value),resolve,reject);
@@ -94,7 +100,7 @@
                         });
                     });
                 }else if(me.status === REJECTING){
-                    return new JPromise((resolve,reject) => {//默认返回promise，可以执行链式then
+                    return new JPromise((resolve,reject) => {//返回新的实例
                         setTimeout(() => {
                             try {
                                 onReject(me.error);
@@ -105,6 +111,14 @@
                     });
                 }
             }
+
+            /* 
+            * 捕获promise抛出错误或者reject状态改变返回值
+            */
+            catch(onReject){
+               return this.then(null,onReject);
+            }
+
         }
 
         function resolvePromise(retValue,resolve,reject){
@@ -123,7 +137,7 @@
             }
         }
 
-        var p = new JPromise((resolve,reject) => {
+        /* var p = new JPromise((resolve,reject) => {
             setTimeout(() => {
                 resolve('1000ms delay--p');
             },1000);
@@ -137,14 +151,14 @@
             });
         }).then(res => {
             console.log(res);
-        });
+        }); */
 
         //运行结果：
         //1000ms delay--p (1s 后执行)
         //run after 2000ms--p (2s 后执行)
         //2000ms delay--p (2s 后执行)
 
-        var p1 = new JPromise((resolve,reject) => {
+        /* var p1 = new JPromise((resolve,reject) => {
             setTimeout(() => {
                 console.log('1000ms delay--p1');
                 return resolve(new JPromise((rs,rj) => {
@@ -155,11 +169,24 @@
             },1000);
         }).then(res => {
             console.log(res);
-        });
+        }); */
 
         //运行结果：
         //1000ms delay--p1 (1s后执行)
         //delay 2000ms--p1 (2s 后执行)
+
+        /* var p = new JPromise((resolve,reject) => {
+            reject(1);
+        }).then(res => {
+            console.log(res);
+            throw new Error('error');
+        },err => {
+            console.log('then catch error');
+            throw new Error('inner error');
+        }).catch(err => {
+            console.log(err);
+        }); */
+
         
 
     </script>
