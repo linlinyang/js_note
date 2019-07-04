@@ -116,9 +116,21 @@
             * 捕获promise抛出错误或者reject状态改变返回值
             */
             catch(onReject){
-               return this.then(null,onReject);
+                return this.then(null,onReject);
             }
 
+            done(onResolve,onReject){
+                this.then(onResolve,onReject).catch(error => {
+                    setTimeout(() => {
+                        throw error
+                    });
+                });
+            }
+
+            finally(callback){
+                console.log(this);
+                return this.then(callback,callback);
+            }
         }
 
         function resolvePromise(retValue,resolve,reject){
@@ -187,7 +199,16 @@
             console.log(err);
         }); */
 
-        
+        var p2 = new JPromise((resolve,reject) => {
+            reject(new JPromise((rs,rj) => {
+                reject(1);
+            }));
+        }).then(ss => {
+            console.log(ss);
+            console.log('finally run');
+        },e => {
+            console.log(e);
+        });
 
     </script>
 
