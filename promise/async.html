@@ -67,17 +67,22 @@
                     me.resolveCallback.push(onResolve);
                     me.rejectCallback.push(onReject);
                 }else if(me.status === FULFILLED){
-                    try {
-                        onResolve(me.value);
-                    } catch (error) {
-                        onReject(error);
-                    }
+                    setTimeout(() => {
+                        try {
+                            onResolve(me.value);
+                        } catch (error) {
+                            onReject(error);
+                        }
+                    });
+                    
                 }else if(me.status === REJECTING){
-                    try {
-                        onReject(me.error);
-                    } catch (error) {
-                        onReject(error);
-                    }
+                    setTimeout(() => {
+                        try {
+                            onReject(me.error);
+                        } catch (error) {
+                            onReject(error);
+                        }
+                    });
                 }
             }
 
@@ -131,6 +136,11 @@
         p1.then(null,res => {
             console.log(res);
         });
+
+        //运行结果：
+
+        //reject test （3s 后）
+
         
     </script>
 

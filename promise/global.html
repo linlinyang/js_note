@@ -56,6 +56,9 @@
                 }
             }
 
+            /* 
+            * 链式操作不是返回this，而是返回一个新的promise实例
+            */
             then(onResolve,onReject){
                 const me = this;
                 onResolve = typeof onResolve === 'function'
@@ -67,7 +70,7 @@
                         throw e;
                     }
                 if(me.status === PENDING){
-                    return new JPromise((resolve,reject) => {//默认返回promise，可以执行链式then
+                    return new JPromise((resolve,reject) => {//返回新的实例
                         me.resolveCallback.push(() => {
                             try {
                                 resolvePromise(onResolve(me.value),resolve,reject);
@@ -77,50 +80,17 @@
                         });
                         me.rejectCallback.push(() => {
                             try {
-                                onReject(me.error);
+                                resolvePromise(onReject(me.error),resolve,reject);
                             } catch (error) {
                                 reject(error);
                             }
                         });
                     });
                 }else if(me.status === FULFILLED){
-                    return new JPromise((resolve,reject) => {//默认返回promise，可以执行链式then
+                    return new JPromise((resolve,reject) => {//返回新的实例
                         setTimeout(() => {
                             try {
                                 resolvePromise(onResolve(me.value),resolve,reject);
-                            } catch (error) {
-                                reject(error);
-                            }
-                        });
-                    });
-                }else if(me.status === REJECTING){
-                    return new JPromise((resolve,reject) => {//默认返回promise，可以执行链式then
-                        setTimeout(() => {
-                            try {
-                                onReject(me.error);
-                            } catch (error) {
-                                reject(error);
-                            }
-                        });
-                    });
-                }
-            }
-
-            /* 
-            * 捕获promise抛出错误或者reject状态改变返回值
-            */
-            catch(onReject){
-                const me = this;
-                onReject = typeof onReject === 'function'
-                    ? onReject
-                    : e => {
-                        throw e;
-                    }
-                if(me.status === PENDING){
-                    return new JPromise((resolve,reject) => {
-                        me.rejectCallback.push(() => {
-                            try {
-                                onReject(me.error);
                             } catch (error) {
                                 reject(error);
                             }
@@ -137,6 +107,20 @@
                         });
                     });
                 }
+            }
+
+            /* 
+            * 捕获promise抛出错误或者reject状态改变返回值
+            */
+            catch(onReject){
+                return this.then(null,onReject);
+            }
+
+            /* 
+            * 总是最后执行
+            */
+            finally(callback){
+                return this.then(callback,callback);
             }
 
             static all(promises){

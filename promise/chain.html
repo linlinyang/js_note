@@ -83,7 +83,7 @@
                         });
                         me.rejectCallback.push(() => {
                             try {
-                                onReject(me.error);
+                                resolvePromise(onReject(me.error),resolve,reject);
                             } catch (error) {
                                 reject(error);
                             }
@@ -119,16 +119,10 @@
                 return this.then(null,onReject);
             }
 
-            done(onResolve,onReject){
-                this.then(onResolve,onReject).catch(error => {
-                    setTimeout(() => {
-                        throw error
-                    });
-                });
-            }
-
+            /* 
+            * 总是最后执行
+            */
             finally(callback){
-                console.log(this);
                 return this.then(callback,callback);
             }
         }
@@ -187,7 +181,7 @@
         //1000ms delay--p1 (1s后执行)
         //delay 2000ms--p1 (2s 后执行)
 
-        /* var p = new JPromise((resolve,reject) => {
+        var p2 = new JPromise((resolve,reject) => {
             reject(1);
         }).then(res => {
             console.log(res);
@@ -197,19 +191,38 @@
             throw new Error('inner error');
         }).catch(err => {
             console.log(err);
-        }); */
-
-        var p2 = new JPromise((resolve,reject) => {
-            reject(new JPromise((rs,rj) => {
-                reject(1);
-            }));
-        }).then(ss => {
-            console.log(ss);
-            console.log('finally run');
-        },e => {
-            console.log(e);
         });
 
+        //运行结果：
+
+        //then catch error
+        //inner error
+
+        var p3 = new JPromise((resolve,reject) => {
+            setTimeout(() => {
+                reject(1);
+            },1000);
+        }).catch(err => {
+            console.log(err); 
+            return new JPromise((rs,rj) => {
+                setTimeout(() => {
+                    rs(2);
+                },1000);
+            });
+        }).then(res => {
+            console.log(res); 
+            return 'foo';
+        }).finally(s => {
+            console.log(s); 
+            console.log('finally run');
+        });
+
+        //运行结果：
+
+        //1 (1s后)
+        //2 (2s后)
+        //foo (2s后)
+        //finally run (2s后)
     </script>
 
 </body>
