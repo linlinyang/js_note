@@ -7,226 +7,260 @@
     <title>Document</title>
 </head>
 <body>
+
+<script>
     
-    <script>
-        
+    /* 
+    * 进阶功能：增加全局方法all和race
+    */    
+    
+    /* 
+    * 定义状态常量
+    */
+    const PENDING = 1;
+    const FULFILLED = 2;
+    const REJECTING = 3;
+
+    class JPromise{
+        constructor(excutor){
+            const me = this;
+            me.status = PENDING;
+            me.value = null;
+            me.error = null;
+            me.resolveCallback = [];//以数组存储多个then的回调函数
+            me.rejectCallback = [];//以数组存储多个then的回调函数
+
+            function resolve(val){
+                if(val instanceof JPromise){//resolve返回promise对象
+                    return val.then(resolve,reject);
+                }
+                if(me.status === PENDING){//检查状态，不可逆操作
+                    me.status = FULFILLED;
+                    me.value = val;
+                    me.resolveCallback.forEach(func => func(val));//状态改变为fulfilled并执行resolve
+                }
+            }
+
+            function reject(val){
+                if(me.status === PENDING){//检查状态，不可逆操作
+                    me.status = REJECTING;
+                    me.error = val;
+                    me.rejectCallback.forEach(func => func(val));//状态改变为rejecting并执行reject
+                }
+            }
+
+            try {
+                excutor(resolve,reject);
+            } catch (error) {
+                reject(error);
+            }
+        }
+
         /* 
-        * 进阶功能：增加全局方法all和race
-        */    
-        
-        /* 
-        * 定义状态常量
+        * 链式操作不是返回this，而是返回一个新的promise实例
         */
-        const PENDING = 1;
-        const FULFILLED = 2;
-        const REJECTING = 3;
-
-        class JPromise{
-            constructor(excutor){
-                const me = this;
-                me.status = PENDING;
-                me.value = null;
-                me.error = null;
-                me.resolveCallback = [];//以数组存储多个then的回调函数
-                me.rejectCallback = [];//以数组存储多个then的回调函数
-
-                function resolve(val){
-                    if(val instanceof JPromise){//resolve返回promise对象
-                        return val.then(resolve,reject);
-                    }
-                    if(me.status === PENDING){//检查状态，不可逆操作
-                        me.status = FULFILLED;
-                        me.value = val;
-                        me.resolveCallback.forEach(func => func(val));//状态改变为fulfilled并执行resolve
-                    }
+        then(onResolve,onReject){
+            const me = this;
+            onResolve = typeof onResolve === 'function'
+                ? onResolve
+                : v => v;
+            onReject = typeof onReject === 'function'
+                ? onReject
+                : e => {
+                    throw e;
                 }
+            if(me.status === PENDING){
+                return new JPromise((resolve,reject) => {//返回新的实例
+                    me.resolveCallback.push(() => {
+                        try {
+                            resolvePromise(onResolve(me.value),resolve,reject);
+                        } catch (error) {
+                            reject(error);
+                        }
+                    });
+                    me.rejectCallback.push(() => {
+                        try {
+                            resolvePromise(onReject(me.error),resolve,reject);
+                        } catch (error) {
+                            reject(error);
+                        }
+                    });
+                });
+            }else if(me.status === FULFILLED){
+                return new JPromise((resolve,reject) => {//返回新的实例
+                    setTimeout(() => {
+                        try {
+                            resolvePromise(onResolve(me.value),resolve,reject);
+                        } catch (error) {
+                            reject(error);
+                        }
+                    });
+                });
+            }else if(me.status === REJECTING){
+                return new JPromise((resolve,reject) => {//返回新的实例
+                    setTimeout(() => {
+                        try {
+                            onReject(me.error);
+                        } catch (error) {
+                            reject(error);
+                        }
+                    });
+                });
+            }
+        }
 
-                function reject(val){
-                    if(me.status === PENDING){//检查状态，不可逆操作
-                        me.status = REJECTING;
-                        me.error = val;
-                        me.rejectCallback.forEach(func => func(val));//状态改变为rejecting并执行reject
+        /* 
+        * 捕获promise抛出错误或者reject状态改变返回值
+        */
+        catch(onReject){
+            return this.then(null,onReject);
+        }
+
+        /* 
+        * 总是最后执行
+        */
+        finally(callback){
+            return this.then(callback,callback);
+        }
+
+        static resolve(value){
+            return value instanceof JPromise 
+                ? value
+                : new JPromise(resolve => {
+                    return resolve(value);
+                });
+        }
+
+        static reject(error){
+            return value instanceof JPromise 
+                ? value
+                : new JPromise(null,reject => {
+                    return reject(error);
+                });
+        }
+
+        static all(promises){
+            promises = Array.isArray(promises) ? promises : [promises];
+            return new JPromise((resolve,reject) => {
+                const length = promises.length;
+                let values = [];//返回结果组成的数组
+                let counter = 0;
+
+                promises.forEach((singlePromise,index) => {
+                    if(!(singlePromise instanceof JPromise)){//如果不是promise实例则调用resolve全局方法
+                        singlePromise = JPromise.resolve(singlePromise);
                     }
-                }
+                    singlePromise.then(ret => {
+                        values[index] = ret;//保证返回结果按照传入的数组顺序来
+                        if(++counter === length){//所有promise都执行resolve时，返回的promise执行resolve
+                            resolve(values);
+                        }
+                    },reject);
+                });
+            });
+        }
 
-                try {
-                    excutor(resolve,reject);
-                } catch (error) {
+        static race(promises){
+            promises = Array.isArray(promises) ? promises : [promises];
+
+            return new JPromise((resolve,reject) => {
+                promises.forEach(singlePromise => {
+                    if(!(singlePromise instanceof JPromise)){//如果不是promise实例则调用resolve全局方法
+                        singlePromise = JPromise.resolve(singlePromise);
+                    }
+                    singlePromise.then(resolve,reject);//执行第一个状态改变的promise，并返回该值到新返回的promise的resolve
+                })
+            });
+        }
+
+    }
+
+    function resolvePromise(retValue,resolve,reject){
+        if(retValue instanceof JPromise){
+            if(retValue.status === PENDING){
+                retValue.then(ret => {
+                    resolvePromise(ret,resolve,reject);
+                },error => {
                     reject(error);
-                }
-            }
-
-            /* 
-            * 链式操作不是返回this，而是返回一个新的promise实例
-            */
-            then(onResolve,onReject){
-                const me = this;
-                onResolve = typeof onResolve === 'function'
-                    ? onResolve
-                    : v => v;
-                onReject = typeof onReject === 'function'
-                    ? onReject
-                    : e => {
-                        throw e;
-                    }
-                if(me.status === PENDING){
-                    return new JPromise((resolve,reject) => {//返回新的实例
-                        me.resolveCallback.push(() => {
-                            try {
-                                resolvePromise(onResolve(me.value),resolve,reject);
-                            } catch (error) {
-                                reject(error);
-                            }
-                        });
-                        me.rejectCallback.push(() => {
-                            try {
-                                resolvePromise(onReject(me.error),resolve,reject);
-                            } catch (error) {
-                                reject(error);
-                            }
-                        });
-                    });
-                }else if(me.status === FULFILLED){
-                    return new JPromise((resolve,reject) => {//返回新的实例
-                        setTimeout(() => {
-                            try {
-                                resolvePromise(onResolve(me.value),resolve,reject);
-                            } catch (error) {
-                                reject(error);
-                            }
-                        });
-                    });
-                }else if(me.status === REJECTING){
-                    return new JPromise((resolve,reject) => {//返回新的实例
-                        setTimeout(() => {
-                            try {
-                                onReject(me.error);
-                            } catch (error) {
-                                reject(error);
-                            }
-                        });
-                    });
-                }
-            }
-
-            /* 
-            * 捕获promise抛出错误或者reject状态改变返回值
-            */
-            catch(onReject){
-                return this.then(null,onReject);
-            }
-
-            /* 
-            * 总是最后执行
-            */
-            finally(callback){
-                return this.then(callback,callback);
-            }
-
-            static all(promises){
-                promises = Array.isArray(promises) ? promises : [promises];
-                return new JPromise((resolve,reject) => {
-                    const length = promises.length;
-                    let values = [];//返回结果组成的数组
-                    let counter = 0;
-
-                    promises.forEach((singlePromise,index) => {
-                        singlePromise.then(ret => {
-                            values[index] = ret;//保证返回结果按照传入的数组顺序来
-                            if(++counter === length){//所有promise都执行resolve时，返回的promise执行resolve
-                                resolve(values);
-                            }
-                        },reject);
-                    });
                 });
-            }
-
-            static race(promises){
-                promises = Array.isArray(promises) ? promises : [promises];
-
-                return new JPromise((resolve,reject) => {
-                    promises.forEach(singlePromise => {
-                        singlePromise.then(resolve,reject);//执行第一个状态改变的promise，并返回该值到新返回的promise的resolve
-                    })
-                });
-            }
-
-        }
-
-        function resolvePromise(retValue,resolve,reject){
-            if(retValue instanceof JPromise){
-                if(retValue.status === PENDING){
-                    retValue.then(ret => {
-                        resolvePromise(ret,resolve,reject);
-                    },error => {
-                        reject(error);
-                    });
-                }else{
-                    retValue.then(resolve,reject);
-                }
             }else{
-                resolve(retValue);
+                retValue.then(resolve,reject);
             }
+        }else{
+            resolve(retValue);
         }
+    }
 
-        var p1 = new JPromise((resolve,reject) => {
-            setTimeout(() => {
-                resolve(1);
-            },2000);
-        });
-        var p2 = new JPromise((resolve,reject) => {
-            setTimeout(() => {
-                resolve(2);
-            },1000);
-        });
+    var p1 = new JPromise((resolve,reject) => {
+        setTimeout(() => {
+            resolve(1);
+        },2000);
+    });
+    var p2 = new JPromise((resolve,reject) => {
+        setTimeout(() => {
+            resolve(2);
+        },1000);
+    });
 
-        JPromise.all([p1,p2]).then(res => {
-            console.log(res);
-        });
+    JPromise.all([p1,p2,'aa']).then(res => {
+        console.log(res);
+    });
 
-        var p3 = new JPromise((resolve,reject) => {
-            setTimeout(() => {
-                reject('some error')
-            },2000);
-        });
+    //运行结果：
 
-        var p4 = new JPromise((resolve,reject) => {
-            setTimeout(() => {
-                resolve(1);
-            },1000);
-        });
+    //[1,2,'aa'] (2s 后)
 
-        JPromise.all([p3,p4]).then(res => {
-            cosnole.log(res);
-        },error => {
-            console.log('rejected');
-        });
+    var p3 = new JPromise((resolve,reject) => {
+        setTimeout(() => {
+            reject('some error')
+        },2000);
+    });
 
-        var p5 = new JPromise((resolve,reject) => {
-            setTimeout(() => {
-                resolve(1);
-            },2000);
-        });
+    var p4 = new JPromise((resolve,reject) => {
+        setTimeout(() => {
+            resolve(1);
+        },1000);
+    });
 
-        var p6 = new JPromise((resolve,reject) => {
-            setTimeout(() => {
-                resolve(2);
-            },1000);
-        });
+    JPromise.all([p3,p4]).then(res => {
+        cosnole.log(res);
+    },error => {
+        console.log('rejected');
+    });
 
-        var p7 = new JPromise((resolve,reject) => {
-            setTimeout(() => {
-                reject('someErrors');
-            },1500);
-        });
+    //运行结果：
 
-        JPromise.race([p5,p6,p7]).then(res => {
-            console.log(res);
-        },error => {
-            console.log(error);
-        });
+    //rejected (2s 后)
 
-    </script>
+    var p5 = new JPromise((resolve,reject) => {
+        setTimeout(() => {
+            resolve(1);
+        },2000);
+    });
+
+    var p6 = new JPromise((resolve,reject) => {
+        setTimeout(() => {
+            resolve(2);
+        },1000);
+    });
+
+    var p7 = new JPromise((resolve,reject) => {
+        setTimeout(() => {
+            reject('someErrors');
+        },1500);
+    });
+
+    JPromise.race([p5,p6,p7]).then(res => {
+        console.log(res);
+    },error => {
+        console.log(error);
+    });
+
+    //运行结果：
+
+    //2 (1s 后)
+
+</script>
 
 </body>
 </html>
